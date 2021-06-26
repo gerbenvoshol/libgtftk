@@ -79,8 +79,11 @@ static void action_transcript(const void *nodep, const VISIT which, const int de
 					if (!ok)
 						if (strcmp(feature, "gene") && strcmp(feature, "transcript")) {
 							for (k = 0; k < row->attributes.nb; k++)
-								if (strncmp(row->attributes.attr[k]->key, "exon", 4))
-									add_attribute(tr_row, row->attributes.attr[k]->key, row->attributes.attr[k]->value);
+								//if (strncmp(row->attributes.attr[k]->key, "exon", 4))
+								//	add_attribute(tr_row, row->attributes.attr[k]->key, row->attributes.attr[k]->value);
+								if (strncmp((row->attributes.attr + k)->key, "exon", 4))
+									add_attribute(tr_row, (row->attributes.attr + k)->key, (row->attributes.attr + k)->value);
+
 							tr_row->field[0] = strdup(row->field[0]);
 							tr_row->field[1] = get_attribute_value(row, "transcript_source");
 							if (tr_row->field[1] == NULL)
@@ -95,9 +98,9 @@ static void action_transcript(const void *nodep, const VISIT which, const int de
 							nbrow++;
 						}
 				}
-				asprintf(&(tr_row->field[3]), "%d", start);
-				asprintf(&(tr_row->field[4]), "%d", end);
-				if (ok) {
+				if (asprintf(&(tr_row->field[3]), "%d", start) > 0 &&
+					asprintf(&(tr_row->field[4]), "%d", end) > 0 &&
+					ok) {
 					if (!strcmp(gtf_d->data[datap->row[0]]->field[2], "gene")) {
 						tr_row->next = gtf_d->data[datap->row[0]]->next;
 						gtf_d->data[datap->row[0]]->next = tr_row;
@@ -167,10 +170,15 @@ static void action_gene(const void *nodep, const VISIT which, const int depth) {
 					if (!strcmp(feature, "exon") || !strcmp(feature, "transcript")) {
 						if (!ok) {
 							for (k = 0; k < row->attributes.nb; k++)
-								if (!strncmp(row->attributes.attr[k]->key, "gene", 4) ||
-										strstr(row->attributes.attr[k]->key, "_gene_") ||
-										!strncmp(strlen(row->attributes.attr[k]->key) >= 5 ? row->attributes.attr[k]->key + strlen(row->attributes.attr[k]->key) - 5 : row->attributes.attr[k]->key, "_gene", 5))
-									add_attribute(g_row, row->attributes.attr[k]->key, row->attributes.attr[k]->value);
+								//if (!strncmp(row->attributes.attr[k]->key, "gene", 4) ||
+								//		strstr(row->attributes.attr[k]->key, "_gene_") ||
+								//		!strncmp(strlen(row->attributes.attr[k]->key) >= 5 ? row->attributes.attr[k]->key + strlen(row->attributes.attr[k]->key) - 5 : row->attributes.attr[k]->key, "_gene", 5))
+								//	add_attribute(g_row, row->attributes.attr[k]->key, row->attributes.attr[k]->value);
+								if (!strncmp((row->attributes.attr + k)->key, "gene", 4) ||
+									strstr((row->attributes.attr + k)->key, "_gene_") ||
+									!strncmp(strlen((row->attributes.attr + k)->key) >= 5 ? (row->attributes.attr + k)->key + strlen((row->attributes.attr + k)->key) - 5 : (row->attributes.attr + k)->key, "_gene", 5))
+								add_attribute(g_row, (row->attributes.attr + k)->key, (row->attributes.attr + k)->value);
+
 							g_row->field[0] = strdup(row->field[0]);
 							g_row->field[1] = get_attribute_value(row, "gene_source");
 							if (g_row->field[1] == NULL)
@@ -186,14 +194,14 @@ static void action_gene(const void *nodep, const VISIT which, const int depth) {
 						}
 					}
 				}
-				asprintf(&(g_row->field[3]), "%d", start);
-				asprintf(&(g_row->field[4]), "%d", end);
-
-				g_row->next = gtf_d->data[datap->row[0]];
-				if (datap->row[0] != 0)
-					gtf_d->data[datap->row[0] - 1]->next = g_row;
-				else
-					gtf_d0 = g_row;
+				if (asprintf(&(g_row->field[3]), "%d", start) > 0 &&
+					asprintf(&(g_row->field[4]), "%d", end) > 0) {
+					g_row->next = gtf_d->data[datap->row[0]];
+					if (datap->row[0] != 0)
+						gtf_d->data[datap->row[0] - 1]->next = g_row;
+					else
+						gtf_d0 = g_row;
+				}
 			}
 			break;
 		case endorder:

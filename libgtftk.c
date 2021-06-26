@@ -113,6 +113,34 @@ void split_key_value(char *s, char **key, char **value) {
 }
 
 /*
+ * This function split a key/value pair (as specified in the GFF3 format for
+ * the attributes column) into 2 character strings. value can be delimitted by
+ * double quote characters like in Ensembl format or not. The strings pointed
+ * by key and value are allocated in this function.
+ *
+ * Parameters:
+ * 		s:		the key/value pair from a GTF attribute
+ * 		key:	a pointer to store the address of the key
+ * 		value:	a pointer to store the address of the value
+ */
+void split_key_value_gff3(char *s, char **key, char **value) {
+	int k = 0;
+
+	if (*s != 0) {
+		while (*s == ' ') s++;
+		while (*(s + k) != '=') k++;
+		*(s + k) = 0;
+		*key = strdup(s);
+		s += k + 1;
+		while ((*s == ' ') || (*s == '"')) s++;
+		k = 0;
+		while ((*(s + k) != ';') && (*(s + k) != 0)) k++;
+		*(s + k) = 0;
+		*value = strdup(s);
+	}
+}
+
+/*
  * This function is used by the C tsearch and tfind functions to search and
  * add ROW_LIST elements in all the indexes on the columns of a GTF file. For
  * more information, see the man pages of tsearch.
@@ -250,7 +278,7 @@ void print_raw_data(RAW_DATA *raw_data, char delim, char *output) {
 int is_in_attrs(GTF_ROW *row, char *at) {
 	int ret = -1, i;
 	for (i = 0; i < row->attributes.nb; i++)
-		if (!strcmp(row->attributes.attr[i]->key, at)) {
+		if (!strcmp((row->attributes.attr + i)->key, at)) {
 			ret = i;
 			break;
 		}
@@ -269,7 +297,7 @@ int is_in_attrs(GTF_ROW *row, char *at) {
 char *get_attribute_value(GTF_ROW *row, char *attr) {
 	int k = is_in_attrs(row, attr);
 
-	if (k != -1) return row->attributes.attr[k]->value;
+	if (k != -1) return (row->attributes.attr + k)->value;
 	return NULL;
 }
 
@@ -328,7 +356,8 @@ GTF_DATA *clone_gtf_data(GTF_DATA *gtf_data) {
 		/*
 		 * creates the attributes table
 		 */
-		row->attributes.attr = (ATTRIBUTE **)calloc(row->attributes.nb, sizeof(ATTRIBUTE *));
+		//row->attributes.attr = (ATTRIBUTE **)calloc(row->attributes.nb, sizeof(ATTRIBUTE *));
+		row->attributes.attr = (ATTRIBUTE *)calloc(row->attributes.nb, sizeof(ATTRIBUTE));
 		//row->attributes.attr = (ATTRIBUTE **)bookmem(row->attributes.nb, sizeof(ATTRIBUTE *), __FILE__, __func__, __LINE__);
 
 		/*
@@ -338,14 +367,16 @@ GTF_DATA *clone_gtf_data(GTF_DATA *gtf_data) {
 			/*
 			 * create an attribute in the attributes table of the row and fill it
 			 */
-			row->attributes.attr[j] = (ATTRIBUTE *)calloc(1, sizeof(ATTRIBUTE));
-			row->attributes.attr[j]->value = strdup(gtf_data->data[i]->attributes.attr[j]->value);
-			row->attributes.attr[j]->key = strdup(gtf_data->data[i]->attributes.attr[j]->key);
+			//row->attributes.attr[j] = (ATTRIBUTE *)calloc(1, sizeof(ATTRIBUTE));
+			//row->attributes.attr[j]->value = strdup(gtf_data->data[i]->attributes.attr[j]->value);
+			//row->attributes.attr[j]->key = strdup(gtf_data->data[i]->attributes.attr[j]->key);
+			(row->attributes.attr + j)->value = strdup((gtf_data->data[i]->attributes.attr + j)->value);
+			(row->attributes.attr + j)->key = strdup((gtf_data->data[i]->attributes.attr + j)->key);
 
 			/*
 			 * make the attributes linked list at the same time
 			 */
-			if (j > 0) row->attributes.attr[j - 1]->next = row->attributes.attr[j];
+			//if (j > 0) row->attributes.attr[j - 1]->next = row->attributes.attr[j];
 		}
 		/*
 		 * copy the 8 first columns values
@@ -362,10 +393,13 @@ GTF_DATA *clone_gtf_data(GTF_DATA *gtf_data) {
  */
 void add_attribute(GTF_ROW *row, char *key, char *value) {
 	row->attributes.nb++;
-	row->attributes.attr = (ATTRIBUTE **)realloc(row->attributes.attr, row->attributes.nb * sizeof(ATTRIBUTE *));
+	/*row->attributes.attr = (ATTRIBUTE **)realloc(row->attributes.attr, row->attributes.nb * sizeof(ATTRIBUTE *));
 	row->attributes.attr[row->attributes.nb - 1] = (ATTRIBUTE *)calloc(1, sizeof(ATTRIBUTE));
 	row->attributes.attr[row->attributes.nb - 1]->key = strdup(key);
 	row->attributes.attr[row->attributes.nb - 1]->value = strdup(value);
 	if (row->attributes.nb > 1)
-		row->attributes.attr[row->attributes.nb - 2]->next = row->attributes.attr[row->attributes.nb - 1];
+		row->attributes.attr[row->attributes.nb - 2]->next = row->attributes.attr[row->attributes.nb - 1];*/
+	row->attributes.attr = (ATTRIBUTE *)realloc(row->attributes.attr, row->attributes.nb * sizeof(ATTRIBUTE));
+	(row->attributes.attr + row->attributes.nb - 1)->key = strdup(key);
+	(row->attributes.attr + row->attributes.nb - 1)->value = strdup(value);
 }
