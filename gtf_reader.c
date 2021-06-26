@@ -80,7 +80,19 @@ TEXTFILE_READER *get_gtf_reader(char *query) {
 			gr->gzfile = gzopen(gr->filename, "r");
 			gr->plainfile = NULL;
 		}
+		else if (strstr(query_filename, ".gff3.gz")) {
+			gr->filename = query_filename;
+			gr->gz = 1;
+			gr->gzfile = gzopen(gr->filename, "r");
+			gr->plainfile = NULL;
+		}
 		else if (strstr(query_filename, ".gtf")) {
+			gr->filename = query_filename;
+			gr->plainfile = fopen(gr->filename, "ro");
+			gr->gzfile = NULL;
+			gr->gz = 0;
+		}
+		else if (strstr(query_filename, ".gff3")) {
 			gr->filename = query_filename;
 			gr->plainfile = fopen(gr->filename, "ro");
 			gr->gzfile = NULL;
